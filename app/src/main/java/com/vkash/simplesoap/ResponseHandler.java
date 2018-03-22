@@ -9,12 +9,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class SoapHandler extends DefaultHandler {
+public class ResponseHandler extends DefaultHandler {
 
     private final BufferedWriter fileWriter;
     private boolean fault;
 
-    public SoapHandler(File file) throws IOException {
+    public ResponseHandler(File file) throws IOException {
         super();
         fileWriter = new BufferedWriter(new FileWriter(file));
     }
