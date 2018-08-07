@@ -1,6 +1,5 @@
 package com.vkash.simplesoap;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -12,19 +11,10 @@ import java.io.IOException;
 public class ResponseHandler extends DefaultHandler {
 
     private final BufferedWriter fileWriter;
-    private boolean fault;
 
-    public ResponseHandler(File file) throws IOException {
+    ResponseHandler(File file) throws IOException {
         super();
         fileWriter = new BufferedWriter(new FileWriter(file));
-    }
-
-    @Override
-    public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-        super.startElement(uri, localName, qName, attributes);
-        if (qName.equalsIgnoreCase("soap:Fault")) {
-            fault = true;
-        }
     }
 
     @Override

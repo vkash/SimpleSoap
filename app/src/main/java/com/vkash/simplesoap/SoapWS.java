@@ -5,12 +5,12 @@ import android.util.Xml;
 import org.xml.sax.SAXException;
 import org.xmlpull.v1.XmlSerializer;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
@@ -87,7 +87,6 @@ public class SoapWS {
         String envelope = getEnvelope(request);
         HttpURLConnection post = getConnection(request);
 
-        //request
         BufferedWriter outStream = null;
         try {
             outStream = new BufferedWriter(new OutputStreamWriter(post.getOutputStream(), "UTF-8"));
@@ -102,22 +101,35 @@ public class SoapWS {
             throw new IOException(post.getResponseMessage());
         }
 
-        //response
         InputStream is = post.getInputStream();
+
         if (post.getContentEncoding().equalsIgnoreCase("gzip")) {
-            is = new GZIPInputStream(post.getInputStream());
+            is = new GZIPInputStream(is);
         }
 
-        File xml = File.createTempFile("soap_" + System.currentTimeMillis(), ".xml");
-        BufferedReader inStream = null;
+        //cache response
+        File tmp = File.createTempFile("soap_" + System.currentTimeMillis(), ".tmp");
+        FileOutputStream fos = new FileOutputStream(tmp);
         try {
-            inStream = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-            Xml.parse(inStream, new ResponseHandler(xml));
-        } finally {
-            if (inStream != null) {
-                inStream.close();
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                fos.write(buffer, 0, bytesRead);
             }
+        } finally {
+            fos.flush();
+            fos.close();
+            is.close();
             post.disconnect();
+        }
+
+        //parse soap envelope
+        File xml;
+        try {
+            xml = File.createTempFile("soap_" + System.currentTimeMillis(), ".xml");
+            Xml.parse(new FileReader(tmp), new ResponseHandler(xml));
+        } finally {
+            is.close();
         }
 
         return xml;
