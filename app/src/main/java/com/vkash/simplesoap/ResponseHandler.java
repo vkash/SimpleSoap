@@ -8,7 +8,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class ResponseHandler extends DefaultHandler {
+class ResponseHandler extends DefaultHandler {
 
     private final BufferedWriter fileWriter;
 

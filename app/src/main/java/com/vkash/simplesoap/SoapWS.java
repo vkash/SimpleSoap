@@ -3,24 +3,24 @@ package com.vkash.simplesoap;
 import android.util.Xml;
 
 import org.xml.sax.SAXException;
-import org.xmlpull.v1.XmlSerializer;
 
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
+@SuppressWarnings("unused")
 public class SoapWS {
 
     private static final String URL_WS = "http://%1$s/%2$s/ws/%3$s";
@@ -31,43 +31,15 @@ public class SoapWS {
         mCredentials = credentials;
     }
 
-    private String getEnvelope(SoapRequest request) throws IOException {
-        XmlSerializer serializer = Xml.newSerializer();
-        StringWriter writer = new StringWriter();
-
-        String soapNS = "http://www.w3.org/2003/05/soap-envelope";
-        String optNS = request.getNamespace();
-
-        serializer.setOutput(writer);
-        serializer.setPrefix("soap", soapNS);
-        serializer.setPrefix("opt", optNS);
-        serializer.startTag(soapNS, "Envelope");
-        serializer.startTag(soapNS, "Header");
-        serializer.endTag(soapNS, "Header");
-        serializer.startTag(soapNS, "Body");
-        serializer.startTag(optNS, request.getMethod());
-
-        for (Object o : request.getParams().entrySet()) {
-            Map.Entry pair = (Map.Entry) o;
-
-            serializer.startTag(optNS, (String) pair.getKey());
-            serializer.text((String) pair.getValue());
-            serializer.endTag(optNS, (String) pair.getKey());
-        }
-
-        serializer.endTag(optNS, request.getMethod());
-        serializer.endTag(soapNS, "Body");
-        serializer.endTag(soapNS, "Envelope");
-        serializer.endDocument();
-        return writer.toString();
+    private String getEnvelope(SoapRequest request) {
+        return new Envelope(request).toString();
     }
 
     private URL getUrlWs() throws MalformedURLException {
         return new URL(String.format(URL_WS, mCredentials.getServer(), mCredentials.getBase(), mCredentials.getWsdl()));
     }
 
-    private HttpURLConnection getConnection(SoapRequest request) throws IOException {
-        URL url = getUrlWs();
+    private HttpURLConnection getConnection(URL url, SoapRequest request) throws IOException {
         HttpURLConnection post = (HttpURLConnection) url.openConnection();
         post.setDoInput(true);
         post.setDoOutput(true);
@@ -82,34 +54,50 @@ public class SoapWS {
         return post;
     }
 
-    public File call(SoapRequest request) throws IOException, SAXException {
+    public File call(SoapRequest request, boolean inMemory) throws IOException, SAXException {
 
-        String envelope = getEnvelope(request);
-        HttpURLConnection post = getConnection(request);
+        HttpURLConnection post = null;
+        InputStream is = null;
+        File body = getTempFile();
 
-        BufferedWriter outStream = null;
         try {
-            outStream = new BufferedWriter(new OutputStreamWriter(post.getOutputStream(), "UTF-8"));
-            outStream.write(envelope);
+            post = getConnection(getUrlWs(), request);
+            is = _call(post, getEnvelope(request));
+
+            if (inMemory) {
+                parse(is, body);
+            } else {
+                File tmp = getTempFile();
+                dump(is, tmp);
+                parse(tmp, body);
+            }
         } finally {
-            if (outStream != null) {
-                outStream.close();
+            close(is);
+            if (post != null) {
+                post.disconnect();
             }
         }
 
-        if (post.getResponseCode() != HTTP_OK) {
-            throw new IOException(post.getResponseMessage());
+        return body;
+    }
+
+    private File getTempFile() throws IOException {
+        return File.createTempFile("soap_" + System.currentTimeMillis(), ".tmp");
+    }
+
+    private void request(OutputStream os, String envelope) throws IOException {
+        BufferedWriter outStream = null;
+        try {
+            outStream = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+            outStream.write(envelope);
+        } finally {
+            close(outStream);
         }
+    }
 
-        InputStream is = post.getInputStream();
+    private void dump(InputStream is, File output) throws IOException {
+        FileOutputStream fos = new FileOutputStream(output);
 
-        if (post.getContentEncoding().equalsIgnoreCase("gzip")) {
-            is = new GZIPInputStream(is);
-        }
-
-        //cache response
-        File tmp = File.createTempFile("soap_" + System.currentTimeMillis(), ".tmp");
-        FileOutputStream fos = new FileOutputStream(tmp);
         try {
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -117,21 +105,41 @@ public class SoapWS {
                 fos.write(buffer, 0, bytesRead);
             }
         } finally {
-            fos.flush();
-            fos.close();
-            is.close();
-            post.disconnect();
+            close(fos);
+        }
+    }
+
+    private void parse(InputStream is, File output) throws IOException, SAXException {
+        Xml.parse(is, Xml.Encoding.UTF_8, new ResponseHandler(output));
+    }
+
+    private void parse(File file, File output) throws IOException, SAXException {
+        Xml.parse(new FileReader(file), new ResponseHandler(output));
+    }
+
+    private InputStream _call(HttpURLConnection conn, String envelope) throws IOException {
+
+        request(conn.getOutputStream(), envelope);
+
+        if (conn.getResponseCode() != HTTP_OK) {
+            throw new IOException(conn.getResponseMessage());
         }
 
-        //parse soap envelope
-        File xml;
+        InputStream is = conn.getInputStream();
+
+        if (conn.getContentEncoding().equalsIgnoreCase("gzip")) {
+            is = new GZIPInputStream(is);
+        }
+
+        return is;
+    }
+
+    private void close(Closeable closeable) {
         try {
-            xml = File.createTempFile("soap_" + System.currentTimeMillis(), ".xml");
-            Xml.parse(new FileReader(tmp), new ResponseHandler(xml));
-        } finally {
-            is.close();
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (Exception ignore) {
         }
-
-        return xml;
     }
 }

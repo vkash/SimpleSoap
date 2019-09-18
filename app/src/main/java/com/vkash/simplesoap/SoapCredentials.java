@@ -38,10 +38,11 @@ public class SoapCredentials {
         return auth;
     }
 
+    @SuppressWarnings("unused")
     public static class Builder {
 
         private String server;
-        private String base = "";
+        private String base = "xyz";
         private String wsdl = "ws1.1cws";
         private int timeout = 30000;
         private String auth = "";
