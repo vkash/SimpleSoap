@@ -125,8 +125,9 @@ public class SoapWS {
         }
 
         InputStream is = conn.getInputStream();
+        String encoding = conn.getContentEncoding();
 
-        if (conn.getContentEncoding().equalsIgnoreCase("gzip")) {
+        if (encoding != null && encoding.equalsIgnoreCase("gzip")) {
             is = new GZIPInputStream(is);
         }
 
