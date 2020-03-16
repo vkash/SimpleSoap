@@ -16,14 +16,13 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
 @SuppressWarnings("unused")
 public class SoapWS {
-
-    private static final String URL_WS = "http://%1$s/%2$s/ws/%3$s";
 
     private final SoapCredentials mCredentials;
 
@@ -36,7 +35,7 @@ public class SoapWS {
     }
 
     private URL getUrlWs() throws MalformedURLException {
-        return new URL(String.format(URL_WS, mCredentials.getServer(), mCredentials.getBase(), mCredentials.getWsdl()));
+        return new URL(String.format("http://%1$s/%2$s/ws/%3$s", mCredentials.getServer(), mCredentials.getBase(), mCredentials.getWsdl()));
     }
 
     private HttpURLConnection getConnection(URL url, SoapRequest request) throws IOException {
@@ -88,7 +87,7 @@ public class SoapWS {
     private void request(OutputStream os, String envelope) throws IOException {
         BufferedWriter outStream = null;
         try {
-            outStream = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+            outStream = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
             outStream.write(envelope);
         } finally {
             close(outStream);

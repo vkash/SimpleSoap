@@ -9,11 +9,11 @@ import java.util.Map;
 
 class Envelope {
 
-    private static final String soapNS = "http://www.w3.org/2003/05/soap-envelope";
     private final StringWriter writer = new StringWriter();
 
     Envelope(SoapRequest request) {
 
+        String soapNS = "http://www.w3.org/2003/05/soap-envelope";
         String optNS = request.getNamespace();
         XmlSerializer serializer = Xml.newSerializer();
 
