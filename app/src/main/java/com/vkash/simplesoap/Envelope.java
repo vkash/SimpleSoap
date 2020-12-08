@@ -1,11 +1,11 @@
 package com.vkash.simplesoap;
 
+import android.support.annotation.NonNull;
 import android.util.Xml;
-
 import org.xmlpull.v1.XmlSerializer;
-
 import java.io.StringWriter;
 import java.util.Map;
+import java.util.Set;
 
 class Envelope {
 
@@ -27,12 +27,10 @@ class Envelope {
             serializer.startTag(soapNS, "Body");
             serializer.startTag(optNS, request.getMethod());
 
-            for (Object o : request.getParams().entrySet()) {
-                Map.Entry pair = (Map.Entry) o;
-
-                serializer.startTag(optNS, (String) pair.getKey());
-                serializer.text((String) pair.getValue());
-                serializer.endTag(optNS, (String) pair.getKey());
+            for (Map.Entry<String, String> entry : request.getParams().entrySet()) {
+                serializer.startTag(optNS, entry.getKey());
+                serializer.text(entry.getValue());
+                serializer.endTag(optNS, entry.getKey());
             }
 
             serializer.endTag(optNS, request.getMethod());
@@ -43,6 +41,7 @@ class Envelope {
         }
     }
 
+    @NonNull
     @Override
     public String toString() {
         return writer.toString();

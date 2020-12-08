@@ -4,11 +4,11 @@ import android.util.Base64;
 
 public class SoapCredentials {
 
-    private String server;
-    private String base;
-    private String wsdl;
-    private int timeout;
-    private String auth;
+    private final String server;
+    private final String base;
+    private final String wsdl;
+    private final int timeout;
+    private final String auth;
 
     public SoapCredentials(Builder builder) {
         server = builder.server;
@@ -41,7 +41,7 @@ public class SoapCredentials {
     @SuppressWarnings("unused")
     public static class Builder {
 
-        private String server;
+        private final String server;
         private String base = "xyz";
         private String wsdl = "ws1.1cws";
         private int timeout = 30000;

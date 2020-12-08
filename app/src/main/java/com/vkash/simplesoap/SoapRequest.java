@@ -5,10 +5,10 @@ import java.util.Map;
 
 public class SoapRequest {
 
-    private String method;
-    private String namespace;
-    private String wsname;
-    private HashMap<String, String> params;
+    private final String method;
+    private final String namespace;
+    private final String wsname;
+    private final HashMap<String, String> params;
 
     public SoapRequest(Builder builder) {
         method = builder.method;
@@ -29,16 +29,17 @@ public class SoapRequest {
         return wsname;
     }
 
-    public Map<String, String> getParams() {
+    public HashMap<String, String> getParams() {
         return params;
     }
 
+    @SuppressWarnings("unused")
     public static class Builder {
 
-        private String method;
-        private String namespace;
-        private String wsname;
-        private HashMap<String, String> params = new HashMap<>();
+        private final String method;
+        private final String namespace;
+        private final String wsname;
+        private final HashMap<String, String> params = new HashMap<>();
 
         public Builder(String namespace, String wsname, String method) {
             this.namespace = namespace;
