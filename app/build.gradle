@@ -13,7 +13,7 @@ android {
     buildTypes {
         libraryVariants.all { variant ->
             variant.outputs.all {
-                outputFileName = "simplesoap_${variant.buildType.name}_${defaultConfig.versionName}.apk"
+                outputFileName = "simplesoap_${variant.buildType.name}_${defaultConfig.versionName}.aar"
             }
         }
         release {
